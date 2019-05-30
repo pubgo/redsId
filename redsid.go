@@ -1,15 +1,17 @@
-package redname
+package redsid
 
 import (
 	"errors"
 	"fmt"
 	"github.com/go-redis/redis"
+	"github.com/pubgo/assert"
+	"github.com/rs/zerolog/log"
 	"time"
 )
 
 func New() *Cfg {
 	return &Cfg{
-		NamePrefix:  "redname",
+		NamePrefix:  "redsID",
 		ExpiredTime: time.Second * 5,
 		RetryTime:   time.Second * 2,
 		id:          -1,
@@ -20,7 +22,7 @@ func New() *Cfg {
 
 type Cfg struct {
 	// 名字前缀
-	// 默认: redname
+	// 默认: redsID
 	NamePrefix string
 
 	// 过期时间
@@ -43,6 +45,8 @@ type Cfg struct {
 }
 
 func (t *Cfg) SetRedisClient(client *redis.Client) {
+	assert.T(assert.IsNil(client), "redis client is nil")
+
 	t.client = client
 }
 
@@ -84,7 +88,9 @@ func (t *Cfg) Start(fn func(err error)) {
 			case <-t._stop:
 				return
 			case _err := <-t._err:
-				if t._errCallBack != nil {
+				if t._errCallBack == nil {
+					log.Error().Err(_err).Msg("error")
+				} else {
 					t._errCallBack(_err)
 				}
 			case <-time.NewTimer(time.Second).C:
