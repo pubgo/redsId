@@ -3,6 +3,7 @@ package redsid_test
 import (
 	"fmt"
 	"github.com/go-redis/redis"
+	"github.com/pubgo/assert"
 	"github.com/pubgo/redsId"
 	"testing"
 )
@@ -17,10 +18,14 @@ func TestS1(t *testing.T) {
 	rn := redsid.New()
 	rn.SetRedisClient(client)
 	rn.Start(func(err error) {
-		fmt.Println("error", err)
+		assert.P(err)
 	})
 
 	for i := 0; i < 100; i++ {
+		fmt.Println("id: ", i)
+		if i == 10 {
+			rn.SetRedisClient(&redis.Client{})
+		}
 		fmt.Println(rn.GetID())
 	}
 
@@ -39,6 +44,10 @@ func TestS2(t *testing.T) {
 	rn.Start(nil)
 
 	for i := 0; i < 100; i++ {
+		fmt.Println("id: ", i)
+		if i == 10 {
+			rn.SetRedisClient(&redis.Client{})
+		}
 		fmt.Println(rn.GetID())
 	}
 

@@ -1,11 +1,11 @@
 package redsid
 
 import (
-	"errors"
 	"fmt"
 	"github.com/go-redis/redis"
 	"github.com/pubgo/assert"
-	"github.com/rs/zerolog/log"
+	"github.com/pubgo/loop"
+	"log"
 	"time"
 )
 
@@ -51,32 +51,29 @@ func (t *Cfg) SetRedisClient(client *redis.Client) {
 }
 
 func (t *Cfg) getClient() *redis.Client {
-	for {
-		if t.client == nil {
-			t._err <- errors.New("redis client is nil")
-			time.Sleep(time.Second)
-		}
-
+	return loop.Loop(func() interface{} {
+		assert.T(assert.IsNil(t.client), "redis client is nil")
 		return t.client
-	}
+	}, func(err error) {
+		t._err <- err
+		time.Sleep(time.Second)
+	}).(*redis.Client)
 }
 
 // 检查name 是否存在, 不存在则设置时间
-func (t *Cfg) checkName(name string, id int) bool {
-	for {
+func (t *Cfg) checkName(name string, id int) (ok bool) {
+	return loop.Loop(func() interface{} {
 		ok, err := t.getClient().SetNX(name, id, t.ExpiredTime).Result()
 		if err == redis.Nil {
 			err = nil
 		}
 
-		if err != nil {
-			t._err <- err
-			time.Sleep(t.RetryTime)
-			continue
-		}
-
+		assert.ErrWrap(err, "redis SetNX error, params(%s,%d)", name, id)
 		return ok
-	}
+	}, func(err error) {
+		t._err <- err
+		time.Sleep(time.Second)
+	}).(bool)
 }
 
 func (t *Cfg) Start(fn func(err error)) {
@@ -89,13 +86,16 @@ func (t *Cfg) Start(fn func(err error)) {
 				return
 			case _err := <-t._err:
 				if t._errCallBack == nil {
-					log.Error().Err(_err).Msg("error")
-				} else {
-					t._errCallBack(_err)
+					log.Println(_err.(*assert.KErr).StackTrace())
+					continue
+				}
+
+				if err := assert.KTry(t._errCallBack, _err); err != nil {
+					log.Fatalln(_err.(*assert.KErr).StackTrace())
 				}
 			case <-time.NewTimer(time.Second).C:
 				_id := t.GetID()
-				t.checkName(fmt.Sprintf("%s%d", t.NamePrefix, _id), _id)
+				go t.checkName(fmt.Sprintf("%s%d", t.NamePrefix, _id), _id)
 			}
 		}
 	}()
