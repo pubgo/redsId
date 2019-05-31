@@ -71,7 +71,7 @@ func (t *Cfg) checkName(name string, id int) (ok bool) {
 		assert.ErrWrap(err, "redis SetNX error, params(%s,%d)", name, id)
 		return ok
 	}, func(err error) {
-		t._err <- err
+		t._err <- assert.Wrap(err, "redis error")
 		time.Sleep(time.Second)
 	}).(bool)
 }
