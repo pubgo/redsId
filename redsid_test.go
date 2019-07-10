@@ -17,6 +17,8 @@ func TestS1(t *testing.T) {
 	})
 	defer client.Close()
 
+	errors.Panic(client.Ping().Err())
+
 	rn := redsid.New()
 	rn.SetRedisClient(client)
 	rn.Start()
@@ -24,7 +26,10 @@ func TestS1(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		fmt.Println("id: ", i)
 		if i == 10 {
-			rn.SetRedisClient(&redis.Client{})
+			rn.SetRedisClient(redis.NewClient(&redis.Options{
+				Network: "tcp",
+				Addr:    "127.0.0.1:6380",
+			}))
 		}
 		fmt.Println(rn.GetID())
 	}
@@ -33,6 +38,8 @@ func TestS1(t *testing.T) {
 }
 
 func TestS2(t *testing.T) {
+	defer errors.Assert()
+
 	client := redis.NewClient(&redis.Options{
 		Network: "tcp",
 		Addr:    "127.0.0.1:6379",
@@ -41,12 +48,15 @@ func TestS2(t *testing.T) {
 
 	rn := redsid.New()
 	rn.SetRedisClient(client)
-	rn.Start(nil)
+	rn.Start()
 
 	for i := 0; i < 100; i++ {
 		fmt.Println("id: ", i)
 		if i == 10 {
-			rn.SetRedisClient(&redis.Client{})
+			rn.SetRedisClient(redis.NewClient(&redis.Options{
+				Network: "tcp",
+				Addr:    "127.0.0.1:6380",
+			}))
 		}
 		fmt.Println(rn.GetID())
 	}
