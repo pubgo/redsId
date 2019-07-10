@@ -3,12 +3,14 @@ package redsid_test
 import (
 	"fmt"
 	"github.com/go-redis/redis"
-	"github.com/pubgo/assert"
+	"github.com/pubgo/errors"
 	"github.com/pubgo/redsId"
 	"testing"
 )
 
 func TestS1(t *testing.T) {
+	defer errors.Assert()
+
 	client := redis.NewClient(&redis.Options{
 		Network: "tcp",
 		Addr:    "127.0.0.1:6379",
@@ -17,9 +19,7 @@ func TestS1(t *testing.T) {
 
 	rn := redsid.New()
 	rn.SetRedisClient(client)
-	rn.Start(func(err error) {
-		assert.P(err)
-	})
+	rn.Start()
 
 	for i := 0; i < 100; i++ {
 		fmt.Println("id: ", i)
