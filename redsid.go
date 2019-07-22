@@ -40,9 +40,8 @@ type Cfg struct {
 }
 
 func (t *Cfg) SetRedisClient(client *redis.Client) {
-	errors.T(errors.IsNone(client), "redis client is nil")
-	errors.Wrap(client.Ping().Err(), "redis client ping error")
-	t.client = client
+	errors.T(errors.IsNone(t.client), "redis client is nil")
+	errors.Wrap(t.client.Ping().Err(), "redis client ping error")
 }
 
 func (t *Cfg) getClient() (c *redis.Client) {
